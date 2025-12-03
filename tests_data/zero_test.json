@@ -1,0 +1,9 @@
+[
+  {
+    "inputs": "I love this product!",
+    "parameters": {
+      "candidate_labels": ["positive", "negative"]
+    },
+    "expected_label": "positive"
+  }
+]
