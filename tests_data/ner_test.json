@@ -1,0 +1,9 @@
+[
+  {
+    "inputs": "My name is John Doe and I live in Paris.",
+    "parameters": {
+      "aggregation_strategy": "simple"
+    },
+    "min_entities": 1
+  }
+]
