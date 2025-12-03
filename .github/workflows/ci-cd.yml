@@ -1,0 +1,102 @@
+name: CI/CD - Generic Inference App
+
+on:
+  push:
+    branches: [ "dev", "prod" ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-inference
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Set model config for this branch
+        run: |
+          BRANCH="${GITHUB_REF##*/}"
+          if [ "$BRANCH" = "dev" ]; then
+            echo "MODEL_ID=protectai/bert-base-NER-onnx" >> $GITHUB_ENV
+            echo "MODEL_TASK=ner" >> $GITHUB_ENV
+            echo "MODEL_CLASS=optimum.onnxruntime.ORTModelForTokenClassification" >> $GITHUB_ENV
+            echo "TOKENIZER_ID=dslim/bert-base-NER" >> $GITHUB_ENV
+            echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+            echo "TEST_DATA_URL=${{ secrets.DEV_TEST_DATA_URL }}" >> $GITHUB_ENV
+          else
+            echo "MODEL_ID=Xenova/bart-large-mnli" >> $GITHUB_ENV
+            echo "MODEL_TASK=zero-shot-classification" >> $GITHUB_ENV
+            echo "MODEL_CLASS=optimum.onnxruntime.ORTModelForSequenceClassification" >> $GITHUB_ENV
+            echo "TOKENIZER_ID=facebook/bart-large-mnli" >> $GITHUB_ENV
+            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+            echo "TEST_DATA_URL=${{ secrets.PROD_TEST_DATA_URL }}" >> $GITHUB_ENV
+          fi
+
+      - name: Download test data from bucket (GitHub Release)
+        run: |
+          mkdir -p tests_data
+          curl -L "$TEST_DATA_URL" -o tests_data/test_data.json
+
+      - name: Run tests
+        env:
+          TEST_DATA_PATH: ${{ github.workspace }}/tests_data/test_data.json
+          MODEL_ID: ${{ env.MODEL_ID }}
+          MODEL_TASK: ${{ env.MODEL_TASK }}
+          MODEL_CLASS: ${{ env.MODEL_CLASS }}
+          TOKENIZER_ID: ${{ env.TOKENIZER_ID }}
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
+        run: |
+          pytest -q
+          # En tus tests, el código leerá las env vars a través de app.config.Settings
+
+  # ------------------------------------------------------------------
+
+  build-and-deploy:
+    needs: test
+    runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        run: |
+          BRANCH="${GITHUB_REF##*/}"
+          echo "IMAGE_TAG=$BRANCH" >> $GITHUB_ENV
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
+
+      - name: Build image
+        run: |
+          docker build -t $REGISTRY/$IMAGE_NAME:${IMAGE_TAG} .
+
+      - name: Push image
+        run: |
+          docker push $REGISTRY/$IMAGE_NAME:${IMAGE_TAG}
+
+      - name: Update services with docker compose
+        run: |
+          # En el runner ya hay un .env con DEV_* y PROD_*
+          # y un docker-compose.yml como el que definimos arriba
+          docker compose pull
+          docker compose up -d

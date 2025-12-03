@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  app-dev:
+    image: ghcr.io/TU_USER/TU_REPO-inference:dev  # imagen construida desde la rama dev
+    container_name: app-dev
+    environment:
+      # Config genérica del modelo (NER)
+      MODEL_ID: ${DEV_MODEL_ID}
+      MODEL_TASK: ${DEV_MODEL_TASK}
+      MODEL_CLASS: ${DEV_MODEL_CLASS}
+      TOKENIZER_ID: ${DEV_TOKENIZER_ID}
+      # Config de entorno
+      ENVIRONMENT: "dev"
+      LOG_DIR: "/logs"
+    volumes:
+      - ./logs/dev:/logs
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  app-prod:
+    image: ghcr.io/TU_USER/TU_REPO-inference:prod  # imagen construida desde la rama prod
+    container_name: app-prod
+    environment:
+      # Config genérica del modelo (Zero-shot)
+      MODEL_ID: ${PROD_MODEL_ID}
+      MODEL_TASK: ${PROD_MODEL_TASK}
+      MODEL_CLASS: ${PROD_MODEL_CLASS}
+      TOKENIZER_ID: ${PROD_TOKENIZER_ID}
+      # Config de entorno
+      ENVIRONMENT: "prod"
+      LOG_DIR: "/logs"
+    volumes:
+      - ./logs/prod:/logs
+    ports:
+      - "8001:8000"
+    restart: unless-stopped
