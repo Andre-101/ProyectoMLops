@@ -6,8 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/proyectomlops-inference
+  IMAGE_NAME: proyectomlops-inference   # solo el nombre; el usuario va en los tags
 
 jobs:
   test:
@@ -51,7 +50,7 @@ jobs:
             echo "ENVIRONMENT=prod" >> $GITHUB_ENV
           fi
 
-      - name: Download test data from bucket (GitHub Release)
+      - name: Download test data from bucket
         run: |
           mkdir -p tests_data
           BRANCH="${GITHUB_REF_NAME:-${GITHUB_REF##*/}}"
@@ -62,6 +61,7 @@ jobs:
           fi
           echo "Downloading test data for branch $BRANCH"
           wget -O tests_data/test_data.json "$URL"
+
       - name: Run tests
         env:
           TEST_DATA_PATH: ${{ github.workspace }}/tests_data/test_data.json
@@ -70,45 +70,34 @@ jobs:
 
   # ------------------------------------------------------------------
 
-  build-and-deploy:
+  build-and-push:
     needs: test
-    runs-on: self-hosted
-    permissions:
-        contents: read
-        packages: write
+    runs-on: ubuntu-latest   # 👈 ya no usamos self-hosted
 
     steps:
-        - name: Checkout
-          uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-        - name: Set image tag
-          run: |
-            $branch = "${{ github.ref_name }}"
-            "IMAGE_TAG=$branch" >> $env:GITHUB_ENV
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
-        - name: Login to Docker Hub
-          uses: docker/login-action@v3
-          with:
-            username: ${{ secrets.DOCKERHUB_USERNAME }}
-            password: ${{ secrets.DOCKERHUB_TOKEN }}
-          #run: |
-           # $user = "${{ secrets.DOCKERHUB_USERNAME }}"
-            #$token = "${{ secrets.DOCKERHUB_TOKEN }}"
-            #$token | docker login -u $user --password-stdin
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
 
-        - name: Build image
-          run: |
-            $image = "$env:IMAGE_NAME:$env:IMAGE_TAG"
-            Write-Host "Building image $image"
-            docker build -t $image .
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-        - name: Push image
-          run: |
-            $image = "$env:IMAGE_NAME:$env:IMAGE_TAG"
-            Write-Host "Pushing image $image"
-            docker push $image
-
-        - name: Update services with docker compose
-          run: |
-            docker compose pull
-            docker compose up -d
+      - name: Build & Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
