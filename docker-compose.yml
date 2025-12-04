@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   app-dev:
-    image: ghcr.io/TU_USER/TU_REPO-inference:dev  # imagen construida desde la rama dev
+    image: kev101/proyectomlops-inference:dev # imagen construida desde la rama dev
     container_name: app-dev
     environment:
       # Config genérica del modelo (NER)
@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
 
   app-prod:
-    image: ghcr.io/TU_USER/TU_REPO-inference:prod  # imagen construida desde la rama prod
+    image: kev101/proyectomlops-inference:prod  # imagen construida desde la rama prod
     container_name: app-prod
     environment:
       # Config genérica del modelo (Zero-shot)

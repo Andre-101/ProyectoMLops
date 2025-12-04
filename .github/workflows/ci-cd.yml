@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}-inference
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/proyectomlops-inference
 
 jobs:
   test:
@@ -86,20 +86,22 @@ jobs:
             $branch = "${{ github.ref_name }}"
             "IMAGE_TAG=$branch" >> $env:GITHUB_ENV
 
-        - name: Login to GHCR
+        - name: Login to Docker Hub
           run: |
-            $user = "${{ github.actor }}"
-            $token = "${{ secrets.GHCR_PAT }}"
-            $token | docker login $env:REGISTRY -u $user --password-stdin
+            $user = "${{ secrets.DOCKERHUB_USERNAME }}"
+            $token = "${{ secrets.DOCKERHUB_TOKEN }}"
+            $token | docker login -u $user --password-stdin
 
         - name: Build image
           run: |
-            $image = "$env:REGISTRY/$env:IMAGE_NAME:$env:IMAGE_TAG"
+            $image = "$env:IMAGE_NAME:$env:IMAGE_TAG"
+            Write-Host "Building image $image"
             docker build -t $image .
 
         - name: Push image
           run: |
-            $image = "$env:REGISTRY/$env:IMAGE_NAME:$env:IMAGE_TAG"
+            $image = "$env:IMAGE_NAME:$env:IMAGE_TAG"
+            Write-Host "Pushing image $image"
             docker push $image
 
         - name: Update services with docker compose
