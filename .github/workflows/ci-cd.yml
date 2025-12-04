@@ -62,7 +62,7 @@ jobs:
           fi
           echo "Downloading test data for branch $BRANCH"
           echo "$URL"
-          curl -L "$URL" -o tests_data/test_data.json
+          curl "$URL" -o tests_data/test_data.json
           cat test_data/test_data.json
       - name: Run tests
         env:
