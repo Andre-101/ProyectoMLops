@@ -89,7 +89,7 @@ jobs:
 
         - name: Login to GHCR
           run: |
-            $token = "${{ secrets.GITHUB_TOKEN }}"
+            $token = "${{ secrets.GHCR_PAT }}"
             $token | docker login $env:REGISTRY -u "${{ github.actor }}" --password-stdin
 
         - name: Build image
