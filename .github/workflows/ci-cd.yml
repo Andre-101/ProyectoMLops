@@ -61,14 +61,12 @@ jobs:
             URL="$PROD_TEST_DATA_URL"
           fi
           echo "Downloading test data for branch $BRANCH"
-          echo "$URL"
           wget -O tests_data/test_data.json "$URL"
-          ls -la ${{ github.workspace }}/tests_data/
       - name: Run tests
         env:
           TEST_DATA_PATH: ${{ github.workspace }}/tests_data/test_data.json
         run: |
-          pytho -m pytest -q
+          python -m pytest -q
 
   # ------------------------------------------------------------------
 
