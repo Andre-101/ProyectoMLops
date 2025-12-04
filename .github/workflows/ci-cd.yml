@@ -74,33 +74,37 @@ jobs:
     needs: test
     runs-on: self-hosted
     permissions:
-      contents: read
-      packages: write
+        contents: read
+        packages: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+        - name: Checkout
+          uses: actions/checkout@v4
 
-      - name: Set image tag
-        run: |
-          BRANCH="${GITHUB_REF##*/}"
-          echo "IMAGE_TAG=$BRANCH" >> $GITHUB_ENV
+        - name: Set image tag
+          run: |
+            $branch = "${{ github.ref_name }}"
+            Write-Host "Branch: $branch"
+            "IMAGE_TAG=$branch" >> $env:GITHUB_ENV
 
-      - name: Login to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
+        - name: Login to GHCR
+          run: |
+            $token = "${{ secrets.GITHUB_TOKEN }}"
+            $token | docker login $env:REGISTRY -u "${{ github.actor }}" --password-stdin
 
-      - name: Build image
-        run: |
-          docker build -t $REGISTRY/$IMAGE_NAME:${IMAGE_TAG} .
+        - name: Build image
+          run: |
+            $image = "$env:REGISTRY/$env:IMAGE_NAME:$env:IMAGE_TAG"
+            Write-Host "Building image $image"
+            docker build -t $image .
 
-      - name: Push image
-        run: |
-          docker push $REGISTRY/$IMAGE_NAME:${IMAGE_TAG}
+        - name: Push image
+          run: |
+            $image = "$env:REGISTRY/$env:IMAGE_NAME:$env:IMAGE_TAG"
+            Write-Host "Pushing image $image"
+            docker push $image
 
-      - name: Update services with docker compose
-        run: |
-          # En el runner ya hay un .env con DEV_* y PROD_*
-          # y un docker-compose.yml como el que definimos arriba
-          docker compose pull
-          docker compose up -d
+        - name: Update services with docker compose
+          run: |
+            docker compose pull
+            docker compose up -d
