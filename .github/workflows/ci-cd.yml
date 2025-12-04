@@ -65,7 +65,7 @@ jobs:
 
       - name: Run tests
         env:
-          TEST_DATA_PATH: ${{ github.workspace }}/tests_data/test_data.json
+          TEST_DATA_PATH: ${{ github.workspace }}/tests_data/ner_data.json
         run: |
           pytest -q
 
