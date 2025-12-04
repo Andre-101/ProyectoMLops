@@ -61,13 +61,14 @@ jobs:
             URL="$PROD_TEST_DATA_URL"
           fi
           echo "Downloading test data for branch $BRANCH"
+          echo "$URL"
           curl -L "$URL" -o tests_data/test_data.json
-
+          cat test_data/test_data.json
       - name: Run tests
         env:
-          TEST_DATA_PATH: ${{ github.workspace }}/tests_data/ner_data.json
+          TEST_DATA_PATH: ${{ github.workspace }}/tests_data/test_data.json
         run: |
-          pytest -q
+          pytho -m pytest -q
 
   # ------------------------------------------------------------------
 
