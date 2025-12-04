@@ -84,24 +84,22 @@ jobs:
         - name: Set image tag
           run: |
             $branch = "${{ github.ref_name }}"
-            Write-Host "Branch: $branch"
             "IMAGE_TAG=$branch" >> $env:GITHUB_ENV
 
         - name: Login to GHCR
           run: |
+            $user = "${{ github.actor }}"
             $token = "${{ secrets.GHCR_PAT }}"
-            $token | docker login $env:REGISTRY -u "${{ github.actor }}" --password-stdin
+            $token | docker login $env:REGISTRY -u $user --password-stdin
 
         - name: Build image
           run: |
             $image = "$env:REGISTRY/$env:IMAGE_NAME:$env:IMAGE_TAG"
-            Write-Host "Building image $image"
             docker build -t $image .
 
         - name: Push image
           run: |
             $image = "$env:REGISTRY/$env:IMAGE_NAME:$env:IMAGE_TAG"
-            Write-Host "Pushing image $image"
             docker push $image
 
         - name: Update services with docker compose
