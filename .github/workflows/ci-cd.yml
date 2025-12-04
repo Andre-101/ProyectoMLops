@@ -63,7 +63,7 @@ jobs:
           echo "Downloading test data for branch $BRANCH"
           echo "$URL"
           wget "$URL" -o tests_data/test_data.json
-          cat test_data/test_data.json
+          cat ${{ github.workspace }}/test_data/test_data.json
       - name: Run tests
         env:
           TEST_DATA_PATH: ${{ github.workspace }}/tests_data/test_data.json
