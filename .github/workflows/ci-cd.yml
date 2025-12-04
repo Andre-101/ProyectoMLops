@@ -16,8 +16,8 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}-inference
-      DEV_TEST_DATA_URL: ${{ variable.DEV_TEST_DATA_URL }}
-      PROD_TEST_DATA_URL: ${{ variable.PROD_TEST_DATA_URL }}
+      DEV_TEST_DATA_URL: ${{ vars.DEV_TEST_DATA_URL }}
+      PROD_TEST_DATA_URL: ${{ vars.PROD_TEST_DATA_URL }}
 
     steps:
       - name: Checkout
